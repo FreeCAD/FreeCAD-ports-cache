@@ -1,0 +1,82 @@
+####
+#   This travis configuration file is used to manage the FreeCAD osx ports cache.
+#  
+#   1.  The enviornment is initialized by creating a GitHub repo context that is used
+#       by the travis-helpers functions.
+#   2.  If a cache exists for the current FreeCAD release, it is downloaded and deployed
+#   3.  If the local cache state is current (i.e. not outdated/stale), then the build exits
+#       at this point.
+#   4.  However if the local cache state is outdated or stale, then a new ports dependency cache
+#       is built using homebrew under the default previx of /usr/local
+#   5.  Once the cache is built, a compressed tar file of the ports is uploaded to GitHub for
+#       use during Travis-CI builds.
+#
+#   NOTES:  a) If you fork this repo and would like to deploy a ports cache, be sure to define
+#              a Travis-CI encrypted environment variable GH_TOKEN that contains the GitHub
+#              OAUTH token needed to deploy a release asset to your forked repo.
+#           b) If you want to force a cache rebuild, you can set the the environment variable
+#              FORCE_CACHE_REBUILD=1 conveniently via the Travis CI Repo Settings UI
+#
+##
+env:
+  global: 
+  - FREECAD_RELEASE="0.16"
+  - PORTS_CACHE="${TRAVIS_REPO_SLUG}"
+
+os:
+  - osx
+
+language:
+  - cpp
+
+before_install:
+  ##
+  # Initialize the ports cache state (steps 1 & 2)
+  # If any of the ports in the cache are outdated,
+  # the cache will be rebuilt and deployed during 
+  # the install and script phases respectively
+  #
+
+  - brew update >/dev/null && brew install jq
+  - source ${TRAVIS_BUILD_DIR}/travis-helpers.sh
+  - cacheContext=$(create_helper_context repo=${PORTS_CACHE} auth_token=${GH_TOKEN} release=${FREECAD_RELEASE})
+  - prime_local_ports_cache $cacheContext ${FREECAD_RELEASE}
+  - shouldRebuildCache=$(( local_ports_cache_is_stale || ${#FORCE_CACHE_REBUILD} ))
+
+install:
+  ##
+  # Build the FreeCAD ports dependencies using homebrew
+  #
+
+  - |
+    if [ $shouldRebuildCache = 1 ]; then
+       ##  Rebuild cache
+       purge_local_ports_cache 
+       brew install cmake                       \
+                    eigen                       \
+                    freetype                    \
+                    qt                          \
+                    python                      \
+                    boost-python                \
+                    pyside                      \
+                    pyside-tools                \
+                    xerces-c                    \
+                    orocos-kdl                  \
+                    homebrew/science/oce        \
+                    homebrew/python/matplotlib 
+       brew install --without-framework --without-soqt sanelson/freecad/coin
+       brew install --HEAD pivy
+       brew install jq
+       brew install node && npm install -g appdmg
+    fi
+
+script:
+  ##
+  # Create a ports archive (compressed tar file) and deploy to GitHub
+  #
+  - |
+    if [ $shouldRebuildCache = 1 ]; then
+       portsArchive=$(create_ports_cache_archive $(brew --prefix) ${TRAVIS_BUILD_DIR}/$(ports_archive_filename))
+       gitHub_deploy_asset_to_release_named $cacheContext $portsArchive ${FREECAD_RELEASE} replace
+       gitHub_prune_assets_for_release_named $cacheContext $(generate_ports_cache_descriptor) 3 ${FREECAD_RELEASE}
+    fi
