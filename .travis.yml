@@ -66,6 +66,7 @@ install:
                     homebrew/python/matplotlib 
        brew install --without-framework --without-soqt sanelson/freecad/coin
        brew install --HEAD pivy
+       brew install --with-oce ianrrees/tapdev/nglib
        brew install jq
        brew install node && npm install -g appdmg
     fi
