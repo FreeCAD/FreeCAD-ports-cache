@@ -66,6 +66,7 @@ install:
                     homebrew/python/matplotlib 
        brew install --without-framework --without-soqt sanelson/freecad/coin
        brew install --HEAD pivy
+       brew install --with-oce ianrrees/tapdev/nglib
        brew install jq
        brew install node && npm install -g appdmg
     fi
@@ -75,7 +76,7 @@ script:
   # Create a ports archive (compressed tar file) and deploy to GitHub
   #
   - |
-    if [ $shouldRebuildCache = 1 ]; then
+    if [ $shouldRebuildCache = 1  -a "$TRAVIS_PULL_REQUEST" == "false" ]; then
        portsArchive=$(create_ports_cache_archive $(brew --prefix) ${TRAVIS_BUILD_DIR}/$(ports_archive_filename))
        gitHub_deploy_asset_to_release_named $cacheContext $portsArchive ${FREECAD_RELEASE} replace
        gitHub_prune_assets_for_release_named $cacheContext $(generate_ports_cache_descriptor) 3 ${FREECAD_RELEASE}
