@@ -64,9 +64,9 @@ install:
                     orocos-kdl                  \
                     homebrew/science/oce        \
                     homebrew/python/matplotlib 
+       brew install --with-oce homebrew/science/nglib
        brew install --without-framework --without-soqt sanelson/freecad/coin
        brew install --HEAD pivy
-       brew install --with-oce ianrrees/tapdev/nglib
        brew install jq
        brew install node && npm install -g appdmg
     fi
