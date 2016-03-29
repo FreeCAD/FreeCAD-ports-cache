@@ -59,12 +59,29 @@ ports_archive_filename()
 }
 
 ####
-#  Uninstall all installed ports
+#  Wipe locally installed ports
+#
+#  1.  Ports prefix (required)
 ##
 purge_local_ports_cache()
 {
-   brew list -1 | grep -v -e '^jq$' -e '^oniguruma$' | xargs brew uninstall --force
+   portsRoot=${1:-/usr/local}
+   find  ${portsRoot} -maxdepth 1 ! -path ${portsRoot} ! -path . -print0 | xargs -0 rm -rf
    return $?
+}
+
+uninstall_current_ports()
+{
+   log "Uninstalling locally installed ports..."
+   brew list -1 | xargs brew uninstall --force
+   return $?
+}
+
+init_local_ports_cache()
+{
+   purge_local_ports_cache /usr/local
+   log "Installing Homebrew in default location /usr/local"
+   /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" </dev/null
 }
 
 ####
@@ -73,6 +90,9 @@ purge_local_ports_cache()
 ##
 local_ports_cache_is_stale()
 {
+   [[ $(which brew) == "" ]] && return 0
+
+   brew update
    return $(( $(brew outdated | wc -l) > 0 ? 0 : 1 ))
 }
 
@@ -81,7 +101,7 @@ local_ports_cache_is_stale()
 #
 #  create_ports_cache_archive [archive path] [ports root]
 #
-#  $1 = ports root (defauls to homebrew --prefix)
+#  $1 = ports root (defaults to homebrew --prefix)
 #  $2 = tar archive path (defaults to $(ports_archive_filename))
 ##
 create_ports_cache_archive()
@@ -92,7 +112,7 @@ create_ports_cache_archive()
 
    log "Creating archive of ports stored in prefix ${portsPrefix} --> ${archive}"
    cd "${portsPrefix}"
-   find . -maxdepth 1 ! -path . -print0 | xargs -0 tar --exclude='.git*' --exclude=var/postgres --exclude=lib/ocline --exclude=lib/node_modules/appium -czf ${archive}
+   find . -maxdepth 1 ! -path . -print0 | xargs -0 tar -czf ${archive}
    cd "${wd}"
 
    log "Archive: $(basename "${archive}"), size: $(du -h ${archive} | cut -f1)"
@@ -105,7 +125,8 @@ restore_ports_cache_archive()
    archive=$(realpath ${2-$(ports_archive_filename)})
 
    log "Unarchiving ${archive} to ${portsPrefix}..."
-   tar -xzf ${archive} -C $(brew --prefix)
+   purge_local_ports_cache ${portsPrefix}
+   tar -xzf ${archive} -C ${portsPrefix}
    [ $? = 0 ] || return 1
 }
 
@@ -113,8 +134,8 @@ restore_ports_cache_archive()
 #  Retrieve the GitHub download url for the latest port cache that
 #  matches the port-cache descriptor/requirements.
 #
-#  contxt = GitHub context
 #  latest_ports_cache_archive_url release
+#  context = GitHub context
 #  release = GitHub release name (defaults to latest GitHub release on the cache repo)
 #
 ##
@@ -131,13 +152,21 @@ latest_GitHub_ports_cache_archive_url()
    else
       releaseAsJSON=$(gitHub_release_named ${1} ${2-$release})
    fi
-   [[ $releaseAsJSON == "" ]] && return 1
+   if [[ $releaseAsJSON == "" ]]; then
+      log "Release $release is not available on repo $repo"
+      return 1
+   fi
 
    cacheAssetAsJSON=$(echo $releaseAsJSON | jq -r --arg cacheDescriptor ${cacheDescriptor} '.assets | map(select(.name | contains($cacheDescriptor))?) | max_by(.id) | {name, created_at, browser_download_url}')
-   [[ $cacheAssetAsJSON == "" ]] && return 1
+   if [[ $cacheAssetAsJSON == "" ]]; then
+      log "Unable to determine the download url. "
+      return 1
+   fi
 
    log "Found matching cache archive $(echo $cacheAssetAsJSON | jq -r '.name') created $(echo $cacheAssetAsJSON | jq -r '.created_at')..."
    echo $(echo $cacheAssetAsJSON | jq -r '.browser_download_url')
+
+   return 0
 }
 
 fetch_remote_ports_cache()
@@ -156,29 +185,29 @@ fetch_remote_ports_cache()
 #  release = ports-cache release (optional, defaults to context release)
 prime_local_ports_cache()
 {
+   #Bail if minimum port requirements are not met
+   [[ $(which brew) == "" || $(which jq) == "" ]] && return 1
+
+   resolve_helper_context ${1}
+
+   log "1. Determining ports archive download URL"
    downloadURL=$(latest_GitHub_ports_cache_archive_url ${1} ${2})
-   if [ "$downloadURL" == "" ]; then
+   if [ $? -ne 0 -o "$downloadURL" == "" ]; then
       log "Port cache not currently available...  port caching is disabled."
-      return 0
+      return 1
    fi
    cacheArchive="/tmp/$(basename $downloadURL)"
+   portsRoot=$(brew --prefix)
 
-   log "Removing installed ports..."
-   purge_local_ports_cache
-
-   log "Updating homebrew formulae..."
-   brew update
-
-   log "Fetching lastest ports cache for FreeCAD ${release} from ${downloadURL} to ${cacheArchive}"
-
+   log "2. Fetching lastest ports cache for FreeCAD ${release} from ${downloadURL} to ${cacheArchive}"
    curl -L -o ${cacheArchive} "${downloadURL}"
    if [ $? -ne 0 ]; then
       err "Failed to download ports cache"
       return 1
    fi
 
-   log "Restoring ports archive..."
-   restore_ports_cache_archive $(brew --prefix) ${cacheArchive}
+   log "3.  Restoring local ports state from archive ${cacheArchive}"
+   restore_ports_cache_archive ${portsRoot} ${cacheArchive}
    [ $? == 0 ] || return 1
 
    return 0

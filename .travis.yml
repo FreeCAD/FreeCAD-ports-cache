@@ -40,8 +40,15 @@ before_install:
   - brew update >/dev/null && brew install jq
   - source ${TRAVIS_BUILD_DIR}/travis-helpers.sh
   - cacheContext=$(create_helper_context repo=${PORTS_CACHE} auth_token=${GH_TOKEN} release=${FREECAD_RELEASE})
-  - prime_local_ports_cache $cacheContext ${FREECAD_RELEASE}
-  - shouldRebuildCache=$(( local_ports_cache_is_stale || ${#FORCE_CACHE_REBUILD} ))
+  - |
+    if ! prime_local_ports_cache $cacheContext \
+       || local_ports_cache_is_stale           \
+       || (( ${#FORCE_CACHE_REBUILD} ))        ;
+    then
+       shouldRebuildCache=1;
+    else
+       shouldRebuildCache=0;
+    fi
 
 install:
   ##
@@ -50,8 +57,8 @@ install:
 
   - |
     if [ $shouldRebuildCache = 1 ]; then
-       ##  Rebuild cache
-       purge_local_ports_cache 
+       ##  Rebuild ports cache
+       init_local_ports_cache
        brew install cmake                       \
                     eigen                       \
                     freetype                    \
@@ -64,9 +71,9 @@ install:
                     orocos-kdl                  \
                     homebrew/science/oce        \
                     homebrew/python/matplotlib 
+       brew install --with-oce homebrew/science/nglib
        brew install --without-framework --without-soqt sanelson/freecad/coin
        brew install --HEAD pivy
-       brew install --with-oce ianrrees/tapdev/nglib
        brew install jq
        brew install node && npm install -g appdmg
     fi
