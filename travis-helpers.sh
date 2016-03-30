@@ -147,6 +147,13 @@ latest_GitHub_ports_cache_archive_url()
    cacheDescriptor=$(generate_ports_cache_descriptor)
    log "Searching GitHub ${repo} for a cache archive that matches descriptor ${cacheDescriptor} under release ${rel-latest}"
 
+   if [ "${auth_token}X" == "X" ]; then
+      log "No OAUTH token provided - attempting unautenticated cache match."
+      url="https://github.com/${repo}/releases/download/v${release}/${cacheDescriptor}.tgz"
+      echo "${url}"
+      return 0
+   fi
+
    if [ "${release}X" == "X" -a "${2}X" == "X" ]; then
       releaseAsJSON=$(gitHub_release_latest ${1})
    else
@@ -200,8 +207,8 @@ prime_local_ports_cache()
    portsRoot=$(brew --prefix)
 
    log "2. Fetching lastest ports cache for FreeCAD ${release} from ${downloadURL} to ${cacheArchive}"
-   curl -L -o ${cacheArchive} "${downloadURL}"
-   if [ $? -ne 0 ]; then
+   response=$(curl -w "%{response_code}" -L -o ${cacheArchive} "${downloadURL}")
+   if [ $? -ne 0 -o "${response}" == "404" ]; then
       err "Failed to download ports cache"
       return 1
    fi

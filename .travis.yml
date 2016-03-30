@@ -1,6 +1,6 @@
 ####
 #   This travis configuration file is used to manage the FreeCAD osx ports cache.
-#  
+# 
 #   1.  The enviornment is initialized by creating a GitHub repo context that is used
 #       by the travis-helpers functions.
 #   2.  If a cache exists for the current FreeCAD release, it is downloaded and deployed
@@ -19,7 +19,7 @@
 #
 ##
 env:
-  global: 
+  global:
   - FREECAD_RELEASE="0.16"
   - PORTS_CACHE="${TRAVIS_REPO_SLUG}"
 
@@ -33,7 +33,7 @@ before_install:
   ##
   # Initialize the ports cache state (steps 1 & 2)
   # If any of the ports in the cache are outdated,
-  # the cache will be rebuilt and deployed during 
+  # the cache will be rebuilt and deployed during
   # the install and script phases respectively
   #
 
@@ -43,6 +43,7 @@ before_install:
   - |
     if ! prime_local_ports_cache $cacheContext \
        || local_ports_cache_is_stale           \
+       || (( ${#TRAVIS_TAG} ))                 \
        || (( ${#FORCE_CACHE_REBUILD} ))        ;
     then
        shouldRebuildCache=1;
@@ -70,7 +71,7 @@ install:
                     xerces-c                    \
                     orocos-kdl                  \
                     homebrew/science/oce        \
-                    homebrew/python/matplotlib 
+                    homebrew/python/matplotlib
        brew install --with-oce homebrew/science/nglib
        brew install --without-framework --without-soqt sanelson/freecad/coin
        brew install --HEAD pivy
@@ -84,7 +85,17 @@ script:
   #
   - |
     if [ $shouldRebuildCache = 1  -a "$TRAVIS_PULL_REQUEST" == "false" ]; then
-       portsArchive=$(create_ports_cache_archive $(brew --prefix) ${TRAVIS_BUILD_DIR}/$(ports_archive_filename))
+       archivePrefix=$(generate_ports_cache_descriptor)
+       if [ "${TRAVIS_TAG}" != "" ]; then
+          # Deploy non-date referential builds for tagged builds
+          #  Used by non-authenticated cache requests
+          archiveFilename=${archivePrefix}
+       else
+          # Deploy date-referential builds for standard integration builds
+          #  Available authenticated (OAUTH) cache clients
+          archiveFilename=${archivePrefix}-$(date '+%Y.%m.%d')
+       fi
+       portsArchive=$(create_ports_cache_archive $(brew --prefix) ${TRAVIS_BUILD_DIR}/${archiveFilename}.tgz)
        gitHub_deploy_asset_to_release_named $cacheContext $portsArchive ${FREECAD_RELEASE} replace
-       gitHub_prune_assets_for_release_named $cacheContext $(generate_ports_cache_descriptor) 3 ${FREECAD_RELEASE}
+       gitHub_prune_assets_for_release_named $cacheContext ${archivePrefix} 3 ${FREECAD_RELEASE}
     fi
