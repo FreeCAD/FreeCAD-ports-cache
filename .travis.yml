@@ -77,6 +77,14 @@ install:
        brew install --HEAD pivy
        brew install jq
        brew install node && npm install -g appdmg
+
+       #Install the 3DConnexion frameworks
+       if [ ! -d /Library/Frameworks/3DconnexionClient.framework ]; then
+          curl -o /tmp/3dFW.dmg -L 'http://www.3dconnexion.com/index.php?eID=sdl&ext=tx_iccsoftware&oid=a273bdbc-c289-e10d-816b-567043331c9e&filename=3DxWareMac_v10-2-5_r2142.dmg'
+          hdiutil attach -readonly /tmp/3dFW.dmg
+          sudo installer -package /Volumes/3Dconnexion\ Software/Install\ 3Dconnexion\ software.pkg -target /
+       fi
+
     fi
 
 script:

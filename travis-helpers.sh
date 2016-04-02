@@ -110,6 +110,11 @@ create_ports_cache_archive()
    archive=$(realpath ${2-$(ports_archive_filename)})
    wd=$(pwd)
 
+   # Include 3Dconnexion framework in the cache
+   if [ -d /Library/Frameworks/3DconnexionClient.framework -a ! -h /Library/Frameworks/3DconnexionClient.framework ]; then
+      cp -r /Library/Frameworks/3DconnexionClient.framework /usr/local/Frameworks/
+   fi
+
    log "Creating archive of ports stored in prefix ${portsPrefix} --> ${archive}"
    cd "${portsPrefix}"
    find . -maxdepth 1 ! -path . -print0 | xargs -0 tar -czf ${archive}
@@ -128,6 +133,13 @@ restore_ports_cache_archive()
    purge_local_ports_cache ${portsPrefix}
    tar -xzf ${archive} -C ${portsPrefix}
    [ $? = 0 ] || return 1
+
+   # Link 3Dconnection framework to the cache if cache exists and not already installed (requires sudo)
+   if [ -d /usr/local/Frameworks/3DconnexionClient.framework -a ! -d /Library/Frameworkds/3DconnexionClient.framework ]; then
+      # unfortunately sudo can not locate shell functions so sudo is invoked directly (blechhhh!)
+      sudo ln -s /usr/local/Frameworks/3DconnexionClient.framework /Library/Frameworks/3DconnexionClient.framework
+      [ $? = 0 ] || return 1
+   fi
 }
 
 ####
