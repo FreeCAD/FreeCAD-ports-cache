@@ -176,9 +176,14 @@ latest_GitHub_ports_cache_archive_url()
       return 1
    fi
 
-   cacheAssetAsJSON=$(echo $releaseAsJSON | jq -r --arg cacheDescriptor ${cacheDescriptor} '.assets | map(select(.name | contains($cacheDescriptor))?) | max_by(.id) | {name, created_at, browser_download_url}')
-   if [[ $cacheAssetAsJSON == "" ]]; then
-      log "Unable to determine the download url. "
+   cacheAssetAsJSON=$(echo $releaseAsJSON | jq -r --arg cacheDescriptor ${cacheDescriptor} '.assets | map(select(.name | contains($cacheDescriptor))?) | max_by(.id) | {name, created_at, browser_download_url} | select (.!=null)')
+   if [[ $cacheAssetAsJSON == "" || $(jq -r '.name' <<<$cacheAssetAsJSON) == "null" ]]; then
+      log "***WARNING: No port cache found"
+      log "  Unable to locate a suitable ports cache archive for descriptor ${cacheDescriptor}"
+      log "  Please confirm that a ports cache with the prefix $cacheDescriptor is available under release ${release} on the GitHub repo: $repo"
+      log "  The port cache release ${release} must use the associated tag v${release}"
+      log "  As a convenience, you can paste this URL into your browser to inspect the available port cache releases: https://github.com/${repo}/releases"
+      log "  If a suitable cache archive is not available, please contact one of the maintainers to release a new cache - https://github.com/${repo}#ports-cache-repo-maintainers"
       return 1
    fi
 
