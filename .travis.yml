@@ -72,11 +72,11 @@ install:
                     orocos-kdl                  \
                     homebrew/science/oce        \
                     homebrew/python/matplotlib
-       brew install --with-oce homebrew/science/nglib
-       brew install --without-framework --without-soqt sanelson/freecad/coin
-       brew install --HEAD pivy
-       brew install jq
-       brew install node && npm install -g appdmg
+       brew install homebrew/science/nglib --with-oce
+       brew install sanelson/freecad/coin --without-framework --without-soqt
+       brew install sanelson/freecad/pivy --HEAD
+       brew install bblacey/taps/med-file --without-python
+       travis_wait 30 brew install vtk --without-python
 
        #Install the 3DConnexion frameworks
        if [ ! -d /Library/Frameworks/3DconnexionClient.framework ]; then
@@ -84,6 +84,10 @@ install:
           hdiutil attach -readonly /tmp/3dFW.dmg
           sudo installer -package /Volumes/3Dconnexion\ Software/Install\ 3Dconnexion\ software.pkg -target /
        fi
+
+       #Install utilities needed for cache management and disk image creation/packaging
+       brew install jq
+       brew install node && npm install -g appdmg
 
     fi
 
