@@ -23,11 +23,9 @@ env:
   - FREECAD_RELEASE="0.17"
   - PORTS_CACHE="${TRAVIS_REPO_SLUG}"
 
-os:
-  - osx
+os: osx
 
-language:
-  - cpp
+language: cpp
 
 before_install:
   ##
@@ -61,6 +59,7 @@ install:
        ##  Rebuild ports cache
        init_local_ports_cache
        brew install cmake                       \
+                    ccache                      \
                     eigen                       \
                     freetype                    \
                     qt                          \
@@ -69,14 +68,17 @@ install:
                     pyside                      \
                     pyside-tools                \
                     xerces-c                    \
-                    orocos-kdl                  \
-                    homebrew/science/oce        \
+                    homebrew/science/orocos-kdl \
                     homebrew/python/matplotlib
-       brew install homebrew/science/nglib --with-oce
        brew install sanelson/freecad/coin --without-framework --without-soqt
        brew install sanelson/freecad/pivy --HEAD
        brew install bblacey/taps/med-file --without-python
-       travis_wait 30 brew install vtk --without-python
+
+       #Install ports bottled with FreeCAD specific options and hosted on FreeCAD-ports-cache
+       brew untap homebrew/science && brew tap bblacey/science
+       brew install --force-bottle vtk --without-python
+       brew install --force-bottle opencascade --without-extras
+       brew install --force-bottle nglib --with-opencascade
 
        #Install the 3DConnexion frameworks
        if [ ! -d /Library/Frameworks/3DconnexionClient.framework ]; then
