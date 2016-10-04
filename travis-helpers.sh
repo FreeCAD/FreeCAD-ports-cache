@@ -49,7 +49,7 @@ realpath()
 ##
 generate_ports_cache_descriptor()
 {
-   echo "homebrew-$(brew config | awk '/^HOMEBREW_VERSION/ {print $2}')-$(sw_vers -productVersion)-$(uname -m)"
+   echo "homebrew-$(brew --version | sed -n -E 's/^Homebrew ([0-9]+.[0-9]+).*/\1/p').x-$(sw_vers -productVersion)-$(uname -m)"
 }
 
 ports_archive_filename()
