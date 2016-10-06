@@ -117,7 +117,7 @@ create_ports_cache_archive()
 
    log "Creating archive of ports stored in prefix ${portsPrefix} --> ${archive}"
    cd "${portsPrefix}"
-   find . -maxdepth 1 ! -path . -print0 | xargs -0 tar -czf ${archive}
+   find . -maxdepth 1 ! -path . -print0 | xargs -0 tar --exclude='*/doc/' --exclude='opencascade/*/src/' -czf ${archive}
    cd "${wd}"
 
    log "Archive: $(basename "${archive}"), size: $(du -h ${archive} | cut -f1)"
