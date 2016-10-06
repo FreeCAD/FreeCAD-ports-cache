@@ -27,6 +27,8 @@ os: osx
 
 language: cpp
 
+osx_image: xcode6.4
+
 before_install:
   ##
   # Initialize the ports cache state (steps 1 & 2)
@@ -58,31 +60,24 @@ install:
     if [ $shouldRebuildCache = 1 ]; then
        ##  Rebuild ports cache
        init_local_ports_cache
-       brew install cmake                       \
-                    ccache                      \
-                    eigen                       \
-                    freetype                    \
-                    qt                          \
-                    python                      \
-                    boost-python                \
-                    pyside                      \
-                    pyside-tools                \
-                    xerces-c                    \
-                    homebrew/science/orocos-kdl \
-                    homebrew/python/matplotlib
-       brew install sanelson/freecad/coin --without-framework --without-soqt
-       brew install sanelson/freecad/pivy --HEAD
-       brew install bblacey/taps/med-file --without-python
 
-       #Install ports bottled with FreeCAD specific options and hosted on FreeCAD-ports-cache
-       brew untap homebrew/science && brew tap bblacey/science
-       brew install --force-bottle vtk --without-python
-       brew install --force-bottle opencascade --without-extras
-       brew install --force-bottle nglib --with-opencascade
+       ##  Catalog environment under which cache was built
+       sw_vers
+       xcodebuild -version -sdk
+       brew --config
+
+       ##  Install the FreeCAD dependencies
+       brew tap FreeCAD/freecad
+       brew tap homebrew/science
+       brew tap homebrew/python
+       brew deps freecad --with-freecad-bottles
+       brew install --verbose --only-dependencies freecad --with-freecad-bottles
+       brew install --verbose --only-dependencies freecad --with-freecad-bottles #ensure dependencies are satisfied
+       rm $(brew --repository homebrew/science)/nglib.rb #remove conflicting formmula
 
        #Install the 3DConnexion frameworks
        if [ ! -d /Library/Frameworks/3DconnexionClient.framework ]; then
-          curl -o /tmp/3dFW.dmg -L 'http://www.3dconnexion.com/index.php?eID=sdl&ext=tx_iccsoftware&oid=a273bdbc-c289-e10d-816b-567043331c9e&filename=3DxWareMac_v10-2-5_r2142.dmg'
+          curl -o /tmp/3dFW.dmg -L 'http://www.3dconnexion.com/index.php?eID=sdl&ext=tx_iccsoftware&oid=a273bdbc-c289-e10d-816b-567043331c9e&filename=3DxWareMac_v10-4-1_r2428.dmg'
           hdiutil attach -readonly /tmp/3dFW.dmg
           sudo installer -package /Volumes/3Dconnexion\ Software/Install\ 3Dconnexion\ software.pkg -target /
        fi
