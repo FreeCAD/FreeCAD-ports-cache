@@ -73,7 +73,6 @@ install:
        brew deps freecad --with-freecad-bottles
        brew install --verbose --only-dependencies freecad --with-freecad-bottles
        brew install --verbose --only-dependencies freecad --with-freecad-bottles #ensure dependencies are satisfied
-       rm $(brew --repository homebrew/science)/nglib.rb #remove conflicting formmula
 
        #Install the 3DConnexion frameworks
        if [ ! -d /Library/Frameworks/3DconnexionClient.framework ]; then
