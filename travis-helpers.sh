@@ -49,7 +49,7 @@ realpath()
 ##
 generate_ports_cache_descriptor()
 {
-   echo "homebrew-$(brew --version | sed -n -E 's/^Homebrew ([0-9]+.[0-9]+).*/\1/p').x-$(sw_vers -productVersion)-$(uname -m)"
+   echo "homebrew-$(sw_vers -productVersion)-$(uname -m)"
 }
 
 ports_archive_filename()
@@ -66,7 +66,7 @@ ports_archive_filename()
 purge_local_ports_cache()
 {
    portsRoot=${1:-/usr/local}
-   find  ${portsRoot} -maxdepth 1 ! -path ${portsRoot} ! -path . -print0 | xargs -0 rm -rf
+   sudo find  ${portsRoot} -maxdepth 1 ! -path ${portsRoot} ! -path . -print0 | xargs -0 rm -rf
    return $?
 }
 
@@ -247,7 +247,7 @@ gitHub_releases()
 {
    resolve_helper_context ${1}
    # Use an authentication token if available to reduce probability of failure due to GitHub rate limiting
-   if [ {auth_token} != "" ]; then
+   if [ "${auth_token}" != "" ]; then
        releasesAsJSON=$(curl -s -H "Authorization:token ${auth_token}"  "https://api.github.com/repos/${repo}/releases" | jq -c -r '.')
    else
        releasesAsJSON=$(curl -s "https://api.github.com/repos/${repo}/releases" | jq -c -r '.')
