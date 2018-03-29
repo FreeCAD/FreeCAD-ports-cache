@@ -68,11 +68,8 @@ install:
 
        ##  Install the FreeCAD dependencies
        brew tap FreeCAD/freecad
-       brew tap homebrew/science
-       brew tap homebrew/python
-       brew deps freecad --with-freecad-bottles
-       brew install --verbose --only-dependencies freecad --with-freecad-bottles
-       brew install --verbose --only-dependencies freecad --with-freecad-bottles #ensure dependencies are satisfied
+       brew deps freecad
+       brew install --verbose --only-dependencies freecad
 
        #Install the 3DConnexion frameworks
        if [ ! -d /Library/Frameworks/3DconnexionClient.framework ]; then
