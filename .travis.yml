@@ -20,7 +20,7 @@
 ##
 env:
   global:
-  - FREECAD_RELEASE="0.17"
+  - FREECAD_RELEASE="0.18"
   - PORTS_CACHE="${TRAVIS_REPO_SLUG}"
 
 os: osx
