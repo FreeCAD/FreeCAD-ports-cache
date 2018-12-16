@@ -66,8 +66,7 @@ ports_archive_filename()
 purge_local_ports_cache()
 {
    portsRoot=${1:-/usr/local}
-   # Removing /usr/local directories results in errors so just move aside
-   mkdir ~/.usr_local && sudo mv ${portsRoot}/* ~/.usr_local
+   sudo find ${portsRoot} -maxdepth 1 ! -path ${portsRoot} ! -path . ! -path remotedesktop -print0 | xargs -0 rm -rf {}/*
    return $?
 }
 
