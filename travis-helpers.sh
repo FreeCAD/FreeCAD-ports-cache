@@ -262,7 +262,7 @@ gitHub_releases()
 
 gitHub_release_named()
 {
-   namedReleaseAsJSON=$(gitHub_releases ${1} | jq -r --arg releaseName ${2-$release} '.[] | select(.name==$releaseName)')
+   namedReleaseAsJSON=$(gitHub_releases ${1} | jq -r --arg releaseName ${2-$release} '.[] | select(.tag_name==$releaseName)')
    echo ${namedReleaseAsJSON}
 }
 
@@ -270,6 +270,12 @@ gitHub_release_latest()
 {
    latestReleaseAsJSON=$(gitHub_releases ${1} | jq -r 'max_by(.id)')
    echo ${latestReleaseAsJSON}
+}
+
+gitHub_release_latest_freecad()
+{
+   latestReleaseAsTagName=$(curl -s "https://api.github.com/repos/FreeCAD/FreeCAD/releases/latest" | jq -r .tag_name)
+   echo ${latestReleaseAsTagName}
 }
 
 ####
