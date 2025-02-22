@@ -1,5 +1,7 @@
 # FreeCAD Ports Cache
 
+OBSOLETE: Travis-CI no longer provides free CI for Open Source projects, as of November 2020. The FreeCAD project shifted to using GitHub CI runners shortly thereafter. This repository is now archived.
+
 ## Overview
 
 This repo hosts the [FreeCAD](http://www.freecadweb.org) ports [cache](https://en.wikipedia.org/wiki/Cache_(computing)) used to significantly reduce the FreeCAD [Travis-CI](http://www.travis-ci.org) build time on MacOS X.
